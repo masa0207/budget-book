@@ -8,7 +8,7 @@ import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Upload, FileText, CheckCircle2, AlertCircle } from 'lucide-react'
+import { Upload, CheckCircle2, AlertCircle } from 'lucide-react'
 import type { Category } from '@/types'
 
 interface PreviewRow {
@@ -30,7 +30,7 @@ function parseMoneyForwardRow(row: Record<string, string>): PreviewRow | null {
   const amountStr = (row['金額（円）'] ?? row['amount'] ?? '0').replace(/,/g, '').replace(/[^\d\-]/g, '')
   const institution = row['保有金融機関'] ?? row['institution'] ?? ''
   const bigCategory = row['大項目'] ?? ''
-  const midCategory = row['中項目'] ?? ''
+
   const memo = row['メモ'] ?? ''
   const transfer = row['振替'] ?? ''
 
@@ -49,13 +49,13 @@ function parseMoneyForwardRow(row: Record<string, string>): PreviewRow | null {
     return {
       date: dateStr, amount: Math.abs(amount), type: 'expense',
       memo: content, source: institution,
-      categoryName: midCategory || bigCategory || 'その他',
+      categoryName: bigCategory || 'その他',
       valid: false, error: '日付フォーマット不正',
     }
   }
 
   const type = amount < 0 ? 'expense' : 'income'
-  const categoryName = midCategory || bigCategory || (type === 'expense' ? 'その他' : 'その他収入')
+  const categoryName = bigCategory || (type === 'expense' ? 'その他' : 'その他収入')
 
   return {
     date,
