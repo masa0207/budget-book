@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell($env:PATH = \"C:\\\\Program Files\\\\nodejs;\" + $env:PATH; cd \"c:\\\\Users\\\\mshkt\\\\.claude\\\\projects\\\\budget-book\"; npx next build 2>&1 | Select-Object -First 80)",
+      "PowerShell($env:PATH = \"C:\\\\Program Files\\\\nodejs;\" + $env:PATH; cd \"c:\\\\Users\\\\mshkt\\\\.claude\\\\projects\\\\budget-book\"; npm install class-variance-authority @radix-ui/react-slot @radix-ui/react-label @radix-ui/react-select @radix-ui/react-dialog @radix-ui/react-tabs @radix-ui/react-separator lucide-react sonner react-hook-form @hookform/resolvers zod 2>&1)",
+      "PowerShell($env:PATH = \"C:\\\\Program Files\\\\nodejs;\" + $env:PATH; cd \"c:\\\\Users\\\\mshkt\\\\.claude\\\\projects\\\\budget-book\"; npm list class-variance-authority @radix-ui/react-slot lucide-react 2>&1)",
+      "PowerShell($env:PATH = \"C:\\\\Program Files\\\\nodejs;\" + $env:PATH; cd \"c:\\\\Users\\\\mshkt\\\\.claude\\\\projects\\\\budget-book\"; npx next build 2>&1 | Select-Object -Last 30)",
+      "PowerShell($env:PATH = \"C:\\\\Program Files\\\\nodejs;\" + $env:PATH; cd \"c:\\\\Users\\\\mshkt\\\\.claude\\\\projects\\\\budget-book\"; npx next build 2>&1 | Select-Object -Last 20)",
+      "PowerShell($env:PATH = \"C:\\\\Program Files\\\\nodejs;\" + $env:PATH; cd \"c:\\\\Users\\\\mshkt\\\\.claude\\\\projects\\\\budget-book\"; npm run dev 2>&1)",
+      "PowerShell(taskkill /PID 17856 /F 2>&1)",
+      "PowerShell($env:PATH = \"C:\\\\Program Files\\\\nodejs;\" + $env:PATH; $proc = Get-NetTCPConnection -LocalPort 3000 -ErrorAction SilentlyContinue | Select-Object -First 1; if \\($proc\\) { taskkill /PID $proc.OwningProcess /F 2>&1 }; Start-Sleep -Seconds 1; Write-Host \"Done\")",
+      "PowerShell($env:PATH = \"C:\\\\Program Files\\\\nodejs;\" + $env:PATH; $proc = Get-NetTCPConnection -LocalPort 3000 -ErrorAction SilentlyContinue | Select-Object -First 1; if \\($proc\\) { taskkill /PID $proc.OwningProcess /F 2>&1 }; Start-Sleep -Seconds 1; cd \"c:\\\\Users\\\\mshkt\\\\.claude\\\\projects\\\\budget-book\"; npm run dev 2>&1)",
+      "PowerShell($env:PATH = \"C:\\\\Program Files\\\\nodejs;\" + $env:PATH; taskkill /PID 20944 /F 2>&1; Start-Sleep -Seconds 2; cd \"c:\\\\Users\\\\mshkt\\\\.claude\\\\projects\\\\budget-book\"; npm run dev 2>&1)",
+      "Read(//c/Program Files/Git/bin/**)",
+      "Bash(git init *)",
+      "Bash(git add *)"
+    ],
+    "additionalDirectories": [
+      "C:\\Users\\mshkt\\.claude\\projects\\c--Users-mshkt--claude-projects-budget-book"
+    ]
+  }
+}
