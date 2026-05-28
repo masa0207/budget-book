@@ -29,7 +29,7 @@ export async function updateSession(request: NextRequest) {
 
   const { pathname } = request.nextUrl
 
-  if (!user && pathname !== '/login') {
+  if (!user && pathname !== '/login' && pathname !== '/auth/callback') {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
