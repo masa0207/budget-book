@@ -75,20 +75,35 @@ export default function ImportPage() {
   const [importing, setImporting] = useState(false)
   const [fileName, setFileName] = useState('')
 
+  function parseRows(data: Record<string, string>[]) {
+    return data.map(parseMoneyForwardRow).filter((r): r is PreviewRow => r !== null)
+  }
+
   function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
     setFileName(file.name)
+    setPreview([])
 
+    // UTF-8で試し、有効行がなければShift-JISで再試行
     Papa.parse(file, {
       header: true,
       encoding: 'UTF-8',
       skipEmptyLines: true,
       complete: (result) => {
-        const rows = (result.data as Record<string, string>[])
-          .map(parseMoneyForwardRow)
-          .filter((r): r is PreviewRow => r !== null)
-        setPreview(rows)
+        const rows = parseRows(result.data as Record<string, string>[])
+        if (rows.length > 0) {
+          setPreview(rows)
+        } else {
+          Papa.parse(file, {
+            header: true,
+            encoding: 'Shift_JIS',
+            skipEmptyLines: true,
+            complete: (result2) => {
+              setPreview(parseRows(result2.data as Record<string, string>[]))
+            },
+          })
+        }
       },
     })
   }
@@ -181,9 +196,9 @@ export default function ImportPage() {
           >
             <Upload className="h-8 w-8 text-slate-400 mx-auto mb-2" />
             <p className="text-sm text-slate-500">
-              {fileName || 'クリックしてCSVファイルを選択'}
+              {fileName ? '' : 'クリックしてCSVファイルを選択'}
             </p>
-            {fileName && <p className="text-xs text-indigo-600 mt-1">{fileName}</p>}
+            {fileName && <p className="text-xs text-indigo-600 mt-1 break-all">{fileName}</p>}
           </div>
           <input
             ref={fileRef}
