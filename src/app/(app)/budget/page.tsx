@@ -8,7 +8,7 @@ import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import type { Category } from '@/types'
 
 function formatCurrency(n: number) {
@@ -62,7 +62,7 @@ export default function BudgetPage() {
       }
     })
 
-    setRows(newRows)
+    setRows(newRows.sort((a, b) => b.actual - a.actual))
     const initInputs: Record<string, string> = {}
     for (const row of newRows) {
       initInputs[row.category.id] = row.budget > 0 ? String(row.budget) : ''
