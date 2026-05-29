@@ -9,6 +9,7 @@ export async function getHouseholdId(): Promise<string | null> {
     .from('household_members')
     .select('household_id')
     .single()
-  cached = data?.household_id ?? null
-  return cached
+  const id: string | null = (data as { household_id: string } | null)?.household_id ?? null
+  cached = id
+  return id
 }
