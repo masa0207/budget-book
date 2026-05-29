@@ -73,21 +73,22 @@ create policy "budgets_delete" on public.budgets for delete using (auth.uid() = 
 create or replace function public.create_default_categories()
 returns trigger as $$
 begin
-  -- 支出カテゴリ
+  -- 支出カテゴリ（マネーフォワード大項目に対応）
   insert into public.categories (user_id, name, type, color, is_default) values
-    (new.id, '住居費',     'expense', '#ef4444', true),
-    (new.id, '食費',       'expense', '#f97316', true),
-    (new.id, '保険',       'expense', '#eab308', true),
-    (new.id, '貯金',       'expense', '#22c55e', true),
-    (new.id, '交際費',     'expense', '#14b8a6', true),
-    (new.id, '日用品',     'expense', '#3b82f6', true),
-    (new.id, '光熱費',     'expense', '#8b5cf6', true),
-    (new.id, '通信費',     'expense', '#ec4899', true),
-    (new.id, '教育費',     'expense', '#06b6d4', true),
-    (new.id, '医療費',     'expense', '#f43f5e', true),
-    (new.id, '交通費',     'expense', '#84cc16', true),
-    (new.id, '特別な支出', 'expense', '#f59e0b', true),
-    (new.id, 'その他',     'expense', '#94a3b8', true);
+    (new.id, '衣服・美容',   'expense', '#d946ef', true),
+    (new.id, '教養・教育',   'expense', '#06b6d4', true),
+    (new.id, '健康・医療',   'expense', '#f43f5e', true),
+    (new.id, '交際費',       'expense', '#14b8a6', true),
+    (new.id, '交通費',       'expense', '#84cc16', true),
+    (new.id, '住宅',         'expense', '#ef4444', true),
+    (new.id, '食費',         'expense', '#f97316', true),
+    (new.id, '水道・光熱費', 'expense', '#8b5cf6', true),
+    (new.id, '貯金',         'expense', '#22c55e', true),
+    (new.id, '通信費',       'expense', '#ec4899', true),
+    (new.id, '特別な支出',   'expense', '#f59e0b', true),
+    (new.id, '日用品',       'expense', '#3b82f6', true),
+    (new.id, '保険',         'expense', '#eab308', true),
+    (new.id, 'その他',       'expense', '#94a3b8', true);
   -- 収入カテゴリ
   insert into public.categories (user_id, name, type, color, is_default) values
     (new.id, '給与',       'income',  '#22c55e', true),

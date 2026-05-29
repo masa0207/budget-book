@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { format, startOfMonth, endOfMonth, subMonths, addMonths } from 'date-fns'
 import { ja } from 'date-fns/locale'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Plus, Minus } from 'lucide-react'
 import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
@@ -15,11 +15,20 @@ function formatCurrency(n: number) {
   return new Intl.NumberFormat('ja-JP', { style: 'currency', currency: 'JPY' }).format(n)
 }
 
+interface TxDetail {
+  id: string
+  amount: number
+  date: string
+  memo: string | null
+  source: string | null
+}
+
 interface BudgetRow {
   category: Category
   budget: number
   actual: number
   budgetId?: string
+  txDetails: TxDetail[]
 }
 
 export default function BudgetPage() {
@@ -28,6 +37,7 @@ export default function BudgetPage() {
   const [rows, setRows] = useState<BudgetRow[]>([])
   const [inputs, setInputs] = useState<Record<string, string>>({})
   const [saving, setSaving] = useState<string | null>(null)
+  const [expanded, setExpanded] = useState<Set<string>>(new Set())
 
   const yearMonth = format(currentDate, 'yyyy-MM')
   const monthLabel = format(currentDate, 'yyyy年M月', { locale: ja })
@@ -38,18 +48,31 @@ export default function BudgetPage() {
 
     const start = format(startOfMonth(currentDate), 'yyyy-MM-dd')
     const end = format(endOfMonth(currentDate), 'yyyy-MM-dd')
+    const prevYearMonth = format(subMonths(currentDate, 1), 'yyyy-MM')
 
-    const [{ data: cats }, { data: budgets }, { data: txs }] = await Promise.all([
+    const [{ data: cats }, { data: budgets }, { data: txs }, { data: prevBudgets }] = await Promise.all([
       supabase.from('categories').select('*').eq('type', 'expense').order('name'),
       supabase.from('budgets').select('*').eq('year_month', yearMonth).eq('user_id', user.id),
-      supabase.from('transactions').select('amount, category_id').eq('type', 'expense').gte('date', start).lte('date', end),
+      supabase.from('transactions')
+        .select('id, amount, category_id, date, memo, source')
+        .eq('type', 'expense')
+        .gte('date', start)
+        .lte('date', end)
+        .order('date', { ascending: false }),
+      supabase.from('budgets').select('*').eq('year_month', prevYearMonth).eq('user_id', user.id),
     ])
 
     const budgetMap = new Map((budgets ?? []).map(b => [b.category_id, b]))
+    const prevBudgetMap = new Map((prevBudgets ?? []).map(b => [b.category_id, b]))
+
     const actualMap = new Map<string, number>()
+    const txDetailMap = new Map<string, TxDetail[]>()
     for (const tx of txs ?? []) {
       if (!tx.category_id) continue
       actualMap.set(tx.category_id, (actualMap.get(tx.category_id) ?? 0) + tx.amount)
+      const details = txDetailMap.get(tx.category_id) ?? []
+      details.push({ id: tx.id, amount: tx.amount, date: tx.date, memo: tx.memo, source: tx.source })
+      txDetailMap.set(tx.category_id, details)
     }
 
     const newRows: BudgetRow[] = (cats ?? []).map(cat => {
@@ -59,13 +82,21 @@ export default function BudgetPage() {
         budget: b?.amount ?? 0,
         actual: actualMap.get(cat.id) ?? 0,
         budgetId: b?.id,
+        txDetails: txDetailMap.get(cat.id) ?? [],
       }
     })
 
     setRows(newRows.sort((a, b) => b.actual - a.actual))
+
     const initInputs: Record<string, string> = {}
     for (const row of newRows) {
-      initInputs[row.category.id] = row.budget > 0 ? String(row.budget) : ''
+      const b = budgetMap.get(row.category.id)
+      if (b !== undefined) {
+        initInputs[row.category.id] = String(b.amount)
+      } else {
+        const prev = prevBudgetMap.get(row.category.id)
+        initInputs[row.category.id] = prev !== undefined ? String(prev.amount) : ''
+      }
     }
     setInputs(initInputs)
   }, [currentDate])
@@ -73,9 +104,11 @@ export default function BudgetPage() {
   useEffect(() => { fetchData() }, [fetchData])
 
   async function saveBudget(categoryId: string) {
-    const amount = parseInt(inputs[categoryId] ?? '0') || 0
-    setSaving(categoryId)
+    const rawVal = inputs[categoryId] ?? ''
+    const amount = rawVal === '' ? 0 : parseInt(rawVal)
+    if (isNaN(amount) || amount < 0) return
 
+    setSaving(categoryId)
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
 
@@ -96,6 +129,15 @@ export default function BudgetPage() {
     toast.success('予算を保存しました')
     setSaving(null)
     fetchData()
+  }
+
+  function toggleExpand(categoryId: string) {
+    setExpanded(prev => {
+      const next = new Set(prev)
+      if (next.has(categoryId)) next.delete(categoryId)
+      else next.add(categoryId)
+      return next
+    })
   }
 
   const totalBudget = rows.reduce((s, r) => s + r.budget, 0)
@@ -142,14 +184,28 @@ export default function BudgetPage() {
           const remaining = row.budget - row.actual
           const pct = row.budget > 0 ? Math.min(Math.round((row.actual / row.budget) * 100), 100) : 0
           const over = row.budget > 0 && row.actual > row.budget
+          const isExpanded = expanded.has(row.category.id)
 
           return (
             <Card key={row.category.id}>
               <CardContent className="p-4 space-y-3">
                 <div className="flex items-center gap-2">
-                  <span className="w-3 h-3 rounded-full" style={{ backgroundColor: row.category.color }} />
-                  <span className="font-medium text-sm">{row.category.name}</span>
+                  <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: row.category.color }} />
+                  <span className="font-medium text-sm flex-1">{row.category.name}</span>
                   {over && <span className="text-xs text-rose-500 font-medium">超過</span>}
+                  {row.txDetails.length > 0 && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6 shrink-0"
+                      onClick={() => toggleExpand(row.category.id)}
+                    >
+                      {isExpanded
+                        ? <Minus className="h-3.5 w-3.5" />
+                        : <Plus className="h-3.5 w-3.5" />
+                      }
+                    </Button>
+                  )}
                 </div>
 
                 {/* 予算入力 */}
@@ -158,6 +214,7 @@ export default function BudgetPage() {
                     type="number"
                     inputMode="numeric"
                     placeholder="予算額を入力"
+                    min={0}
                     value={inputs[row.category.id] ?? ''}
                     onChange={e => setInputs(prev => ({ ...prev, [row.category.id]: e.target.value }))}
                     className="flex-1 h-9"
@@ -189,6 +246,25 @@ export default function BudgetPage() {
                       />
                     </div>
                   </>
+                )}
+
+                {/* 明細 */}
+                {isExpanded && (
+                  <div className="border-t pt-3 space-y-1.5">
+                    {row.txDetails.map(tx => (
+                      <div key={tx.id} className="flex justify-between items-center text-xs text-slate-600">
+                        <div className="flex-1 min-w-0 flex items-center gap-2">
+                          <span className="text-slate-400 shrink-0">
+                            {format(new Date(tx.date + 'T00:00:00'), 'M/d')}
+                          </span>
+                          <span className="truncate">
+                            {[tx.source, tx.memo].filter(Boolean).join(' · ') || '—'}
+                          </span>
+                        </div>
+                        <span className="shrink-0 ml-2 font-medium">{formatCurrency(tx.amount)}</span>
+                      </div>
+                    ))}
+                  </div>
                 )}
               </CardContent>
             </Card>
