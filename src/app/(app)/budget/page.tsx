@@ -86,7 +86,7 @@ export default function BudgetPage() {
       }
     })
 
-    setRows(newRows.sort((a, b) => b.actual - a.actual))
+    setRows(newRows.sort((a, b) => (b.actual ?? 0) - (a.actual ?? 0)))
 
     const initInputs: Record<string, string> = {}
     for (const row of newRows) {
