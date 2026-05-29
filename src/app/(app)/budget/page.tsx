@@ -6,6 +6,7 @@ import { ja } from 'date-fns/locale'
 import { ChevronLeft, ChevronRight, Plus, Minus } from 'lucide-react'
 import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
+import { getHouseholdId } from '@/lib/supabase/household'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
@@ -52,7 +53,7 @@ export default function BudgetPage() {
 
     const [{ data: cats }, { data: budgets }, { data: txs }, { data: prevBudgets }] = await Promise.all([
       supabase.from('categories').select('*').eq('type', 'expense').order('name'),
-      supabase.from('budgets').select('*').eq('year_month', yearMonth).eq('user_id', user.id),
+      supabase.from('budgets').select('*').eq('year_month', yearMonth),
       supabase.from('transactions')
         .select('id, amount, category_id, date, memo, source')
         .eq('type', 'expense')
@@ -109,8 +110,11 @@ export default function BudgetPage() {
     if (isNaN(amount) || amount < 0) return
 
     setSaving(categoryId)
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
+    const [{ data: { user } }, householdId] = await Promise.all([
+      supabase.auth.getUser(),
+      getHouseholdId(),
+    ])
+    if (!user || !householdId) return
 
     const row = rows.find(r => r.category.id === categoryId)
     if (!row) return
@@ -120,6 +124,7 @@ export default function BudgetPage() {
     } else {
       await supabase.from('budgets').insert({
         user_id: user.id,
+        household_id: householdId,
         category_id: categoryId,
         year_month: yearMonth,
         amount,

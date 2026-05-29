@@ -5,6 +5,7 @@ import Papa from 'papaparse'
 import { format, parse, isValid } from 'date-fns'
 import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
+import { getHouseholdId } from '@/lib/supabase/household'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -116,8 +117,11 @@ export default function ImportPage() {
     }
 
     setImporting(true)
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
+    const [{ data: { user } }, householdId] = await Promise.all([
+      supabase.auth.getUser(),
+      getHouseholdId(),
+    ])
+    if (!user || !householdId) return
 
     // カテゴリ一覧取得
     const { data: cats } = await supabase.from('categories').select('*')
@@ -135,7 +139,7 @@ export default function ImportPage() {
         // 新しいカテゴリを作成
         const { data: newCat } = await supabase
           .from('categories')
-          .insert({ user_id: user.id, name: row.categoryName, type: row.type, color: '#94a3b8' })
+          .insert({ user_id: user.id, household_id: householdId, name: row.categoryName, type: row.type, color: '#94a3b8' })
           .select()
           .single()
         if (newCat) {
@@ -146,6 +150,7 @@ export default function ImportPage() {
 
       inserts.push({
         user_id: user.id,
+        household_id: householdId,
         type: row.type,
         amount: row.amount,
         category_id: cat?.id ?? null,

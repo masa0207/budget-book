@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { format } from 'date-fns'
 import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
+import { getHouseholdId } from '@/lib/supabase/household'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -49,11 +50,15 @@ export function TransactionForm({ onSuccess, editTransaction }: Props) {
     }
     setLoading(true)
 
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
+    const [{ data: { user } }, householdId] = await Promise.all([
+      supabase.auth.getUser(),
+      getHouseholdId(),
+    ])
+    if (!user || !householdId) return
 
     const payload = {
       user_id: user.id,
+      household_id: householdId,
       type,
       amount: parseInt(amount.replace(/,/g, '')),
       category_id: categoryId,
