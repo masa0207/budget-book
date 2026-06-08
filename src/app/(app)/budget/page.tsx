@@ -38,6 +38,7 @@ export default function BudgetPage() {
   const [rows, setRows] = useState<BudgetRow[]>([])
   const [inputs, setInputs] = useState<Record<string, string>>({})
   const [saving, setSaving] = useState<string | null>(null)
+  const [savingAll, setSavingAll] = useState(false)
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
 
   const yearMonth = format(currentDate, 'yyyy-MM')
@@ -136,6 +137,33 @@ export default function BudgetPage() {
     fetchData()
   }
 
+  async function saveAll() {
+    setSavingAll(true)
+    const [{ data: { user } }, householdId] = await Promise.all([
+      supabase.auth.getUser(),
+      getHouseholdId(),
+    ])
+    if (!user || !householdId) { setSavingAll(false); return }
+
+    const inserts = rows
+      .filter(r => !r.budgetId)
+      .map(r => ({
+        user_id: user.id,
+        household_id: householdId,
+        category_id: r.category.id,
+        year_month: yearMonth,
+        amount: parseInt(inputs[r.category.id] ?? '0') || 0,
+      }))
+
+    if (inserts.length > 0) {
+      await supabase.from('budgets').insert(inserts)
+    }
+
+    toast.success('予算を一括保存しました')
+    setSavingAll(false)
+    fetchData()
+  }
+
   function toggleExpand(categoryId: string) {
     setExpanded(prev => {
       const next = new Set(prev)
@@ -160,6 +188,17 @@ export default function BudgetPage() {
           <ChevronRight className="h-5 w-5" />
         </Button>
       </div>
+
+      {/* 一括保存（当月に予算未保存の場合） */}
+      {rows.length > 0 && rows.every(r => !r.budgetId) && (
+        <Button
+          className="w-full"
+          onClick={saveAll}
+          disabled={savingAll}
+        >
+          {savingAll ? '保存中...' : '先月の予算を今月に引き継ぐ'}
+        </Button>
+      )}
 
       {/* 合計サマリー */}
       {totalBudget > 0 && (
